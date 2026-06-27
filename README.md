@@ -1,82 +1,137 @@
+<p align="center"><b>简体中文</b> | <a href="./README_en.md">English</a></p>
+
 # zhihu-distill
 
-知乎用户主页全量下载并 AI 蒸馏的 CodeBuddy Skill。输入知乎用户链接，自动下载全部回答、文章、想法，保存为 Markdown 文件，然后生成结构化的知识体系蒸馏报告。
+一句话说明：这个 Skill 帮你把一个知乎用户的回答、文章和想法下载为 Markdown，再按主题筛选、合并，并整理成可供 AI 蒸馏的知识体系材料。
 
-## Features
+## 这个版本能做什么
 
-- **全量下载**: 自动爬取知乎用户的全部回答、文章、想法(pins)，转为干净的 Markdown
-- **主题筛选**: 内置投资/科技关键词库，支持自定义关键词，智能过滤相关内容
-- **内容合并**: 按优先级（文章>回答>想法）合并为单一文档
-- **AI 蒸馏**: 提供结构化 Prompt 模板，引导 AI 生成深度知识体系报告
+- 从知乎用户主页批量下载回答、文章和想法，并保存为带元信息的 Markdown 文件。
+- 按投资、科技、教育、健康、设计或自定义关键词筛选内容。
+- 将筛选后的内容按文章、回答、想法顺序合并成一个可读的 Markdown 文件。
+- 提供蒸馏提示词模板，帮助 AI 生成作者画像、核心理念、方法论、观点地图和实践建议。
+- 可作为 Codex Skill 使用，也可以单独运行 Python 脚本。
 
-## Installation
+## 适合谁
 
-作为 CodeBuddy Skill 使用：
+- 想系统研究某位知乎创作者长期内容的人。
+- 想把分散回答整理成知识库、研究笔记或投资/行业观察材料的人。
+- 已经有合法访问权限和有效 Cookie，需要把人工复制整理流程自动化的人。
+
+## 使用示例
+
+示例输入：
 
 ```bash
-# 解压到用户 skill 目录
-unzip zhihu-distill.zip -d ~/.codebuddy/skills/
+python3 scripts/zhihu_download.py --user example-user --output ./data
+python3 scripts/zhihu_filter.py --input ./data/raw --output ./data/filtered --topic invest
+python3 scripts/zhihu_merge.py --input ./data/filtered --output ./data/merged.md
 ```
 
-或独立使用脚本：
+示例输出结构：
+
+```text
+data/
+├── raw/
+│   ├── answers/
+│   ├── articles/
+│   ├── pins/
+│   └── meta.json
+├── filtered/
+└── merged.md
+```
+
+`merged.md` 可以继续配合 `references/prompt_templates.md` 中的模板做 AI 蒸馏。
+
+## 快速开始
+
+安装依赖：
 
 ```bash
-pip install httpx markdownify beautifulsoup4
+python3 -m pip install httpx markdownify beautifulsoup4
 ```
 
-## Usage
-
-### 1. 下载
+下载指定用户内容：
 
 ```bash
 python3 scripts/zhihu_download.py --user <user_token> --output ./data
 ```
 
-其中 `user_token` 是知乎个人主页 URL 中的标识：`zhihu.com/people/<user_token>`
+`user_token` 是知乎个人主页 URL 中的标识，例如 `zhihu.com/people/<user_token>`。
 
-首次运行会提示输入知乎 Cookie（从浏览器开发者工具获取）。
+首次运行会提示输入知乎 Cookie。Cookie 只应保存在本地输出目录，仓库的 `.gitignore` 已排除 `cookie.txt` 和常见本地产物。
 
-### 2. 筛选
+## 常见用法
+
+按内置主题筛选：
 
 ```bash
-# 使用内置投资主题
-python3 scripts/zhihu_filter.py --input ./data/raw --output ./data/filtered --topic invest
+python3 scripts/zhihu_filter.py --input ./data/raw --output ./data/filtered --topic tech
+```
 
-# 使用自定义关键词
+按自定义关键词筛选：
+
+```bash
 python3 scripts/zhihu_filter.py --input ./data/raw --output ./data/filtered --keywords "AI,机器学习,大模型"
 ```
 
-### 3. 合并
+合并为单个 Markdown：
 
 ```bash
 python3 scripts/zhihu_merge.py --input ./data/filtered --output ./data/merged.md
 ```
 
-### 4. AI 蒸馏
+## 当前限制
 
-将合并后的文件分批发送给 AI，使用 `references/prompt_templates.md` 中的模板生成蒸馏报告。
+- 需要有效知乎 Cookie；Cookie 过期后需要重新获取。
+- 脚本依赖知乎页面和接口结构，平台改版时可能需要维护。
+- 下载速度有随机延迟，适合完整整理，不适合高频抓取。
+- 蒸馏报告需要 AI 根据合并文件继续生成，本仓库只提供下载、筛选、合并和提示词模板。
 
-## File Structure
+## 安全与隐私说明
 
-```
-zhihu-distill/
-├── SKILL.md                    # CodeBuddy Skill 定义
-├── scripts/
-│   ├── zhihu_download.py       # 下载脚本
-│   ├── zhihu_filter.py         # 筛选脚本
-│   └── zhihu_merge.py          # 合并脚本
-├── references/
-│   └── prompt_templates.md     # 蒸馏 Prompt 模板
-├── .gitignore
-└── README.md
-```
+- 只处理你有权访问和保存的内容，并遵守知乎平台规则。
+- 不要提交 Cookie、`.env`、下载原文、筛选产物或个人知识库材料到仓库。
+- `.gitignore` 已排除 `cookie.txt`、`raw/`、`filtered/`、`distilled/`、`merged.md` 等本地产物。
 
-## Notes
+## 技术实现
 
-- 需要有效的知乎 Cookie（有效期有限，过期需重新获取）
-- 脚本内置随机延迟（1.5-3秒）以避免触发反爬
-- Cookie 文件（`cookie.txt`）已在 `.gitignore` 中排除，不会上传
+- `scripts/zhihu_download.py` 下载回答、文章和想法，并转换为 Markdown。
+- `scripts/zhihu_filter.py` 按主题或关键词筛选内容。
+- `scripts/zhihu_merge.py` 合并内容并保持类型优先级。
+- `references/prompt_templates.md` 提供蒸馏提示词模板。
+
+## Roadmap
+
+- 增加更稳健的失败重试和下载进度恢复。
+- 为蒸馏报告增加可复用输出模板。
+- 增加更多主题关键词配置。
 
 ## License
 
-MIT
+[MIT](./LICENSE)
+
+## Contributors
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/hankchn">
+        <img src="https://github.com/hankchn.png" width="64" height="64" style="border-radius:50%;" alt="hankchn" />
+        <br />
+        <sub><b>hankchn</b></sub>
+      </a>
+      <br />
+      <sub>Hank Yang</sub>
+    </td>
+    <td align="center">
+      <a href="https://openai.com/codex">
+        <img src="https://github.com/openai.png" width="64" height="64" style="border-radius:50%;" alt="Codex" />
+        <br />
+        <sub><b>Codex</b></sub>
+      </a>
+      <br />
+      <sub>OpenAI Codex</sub>
+    </td>
+  </tr>
+</table>
